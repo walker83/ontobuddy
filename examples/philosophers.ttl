@@ -1,0 +1,122 @@
+# 哲学家本体示例
+#
+# 这是一个可运行的 myonto 本体样例，演示类的层级、个体、
+# 多种关系、语言标签、类型化字面量等特性。
+#
+# 用法：
+#   mkdir ~/phil-demo && cd ~/phil-demo
+#   cp /path/to/MyOntopo/examples/philosophers.ttl .
+#   cat > .myonto.toml <<EOF
+#   base_iri = 'http://example.org/'
+#   data_file = 'philosophers.ttl'
+#   prefix = 'ex'
+#   EOF
+#   myonto list
+#   myonto search aristotle
+
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# ===== 类定义（带继承层级）=====
+
+ex:Person a rdfs:Class ;
+    rdfs:label "Person" ;
+    rdfs:comment "一个人类" .
+
+ex:Philosopher a rdfs:Class ;
+    rdfs:subClassOf ex:Person ;
+    rdfs:label "Philosopher" ;
+    rdfs:comment "哲学家" .
+
+ex:Mathematician a rdfs:Class ;
+    rdfs:subClassOf ex:Person ;
+    rdfs:label "Mathematician" ;
+    rdfs:comment "数学家" .
+
+ex:Work a rdfs:Class ;
+    rdfs:label "Work" ;
+    rdfs:comment "著作" .
+
+ex:Era a rdfs:Class ;
+    rdfs:label "Era" ;
+    rdfs:comment "历史时代" .
+
+# ===== 关系属性定义 =====
+
+ex:influences a rdf:Property ;
+    rdfs:label "影响" ;
+    rdfs:comment "X 影响了 Y 的思想" .
+
+ex:taughtBy a rdf:Property ;
+    rdfs:label "师从" .
+
+ex:wrote a rdf:Property ;
+    rdfs:label "著作" ;
+    rdfs:comment "X 写了 Y" .
+
+ex:livedIn a rdf:Property ;
+    rdfs:label "生活在" .
+
+# ===== 时代 =====
+
+ex:ancient-greece a ex:Era ;
+    rdfs:label "Ancient Greece" ;
+    rdfs:comment "古希腊（约前 800 - 前 146 年）" .
+
+ex:modern-europe a ex:Era ;
+    rdfs:label "Modern Europe" ;
+    rdfs:comment "近代欧洲（17-19 世纪）" .
+
+# ===== 古希腊哲学家 =====
+
+ex:socrates a ex:Philosopher ;
+    rdfs:label "Socrates" ;
+    rdfs:comment "苏格拉底，古希腊哲学的奠基人"@zh ;
+    ex:livedIn ex:ancient-greece ;
+    ex:wrote ex:nothing .   # 苏格拉底本人未留下著作
+
+ex:plato a ex:Philosopher ;
+    rdfs:label "Plato" ;
+    rdfs:comment "柏拉图，苏格拉底最重要的学生"@zh ;
+    ex:taughtBy ex:socrates ;
+    ex:livedIn ex:ancient-greece ;
+    ex:wrote ex:republic .
+
+ex:aristotle a ex:Philosopher ;
+    rdfs:label "Aristotle" ;
+    rdfs:comment "亚里士多德，柏拉图的学生，亚历山大大帝的老师"@zh ;
+    ex:taughtBy ex:plato ;
+    ex:livedIn ex:ancient-greece ;
+    ex:wrote ex:nicomachean-ethics ;
+    ex:influences ex:leibniz .
+
+# ===== 近代哲学家 / 数学家的跨时代影响 =====
+
+ex:newton a ex:Mathematician ;
+    rdfs:label "Isaac Newton" ;
+    rdfs:comment "牛顿 (1643-1727)，微积分的共同发明者"@zh ;
+    ex:livedIn ex:modern-europe ;
+    ex:bornYear "1643"^^xsd:integer .
+
+ex:leibniz a ex:Mathematician, ex:Philosopher ;
+    rdfs:label "Gottfried Wilhelm Leibniz" ;
+    rdfs:comment "莱布尼茨 (1646-1716)，德国数学家、哲学家"@zh ;
+    ex:livedIn ex:modern-europe ;
+    ex:bornYear "1646"^^xsd:integer ;
+    ex:influences ex:newton .
+
+# ===== 著作 =====
+
+ex:republic a ex:Work ;
+    rdfs:label "The Republic" ;
+    rdfs:comment "《理想国》，柏拉图的代表作"@zh .
+
+ex:nicomachean-ethics a ex:Work ;
+    rdfs:label "Nicomachean Ethics" ;
+    rdfs:comment "《尼各马可伦理学》，亚里士多德的伦理学著作"@zh .
+
+ex:nothing a ex:Work ;
+    rdfs:label "(无著作)" ;
+    rdfs:comment "苏格拉底本人未留下任何文字著作"@zh .

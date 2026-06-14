@@ -1,0 +1,30 @@
+# 最小本体示例
+#
+# 演示最基本的概念：一个类、两个实体、一条关系。
+# 适合第一次接触 myonto 的人。
+#
+# 用法：
+#   mkdir ~/demo && cd ~/demo
+#   cp /path/to/MyOntopo/examples/minimal.ttl .
+#   cp /path/to/MyOntopo/examples/.myonto.toml .
+#   myonto list
+#   myonto entity show alice
+
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# 定义一个类：Person
+ex:Person a rdfs:Class ;
+    rdfs:label "Person" ;
+    rdfs:comment "一个人类" .
+
+# 两个 Person 实例
+ex:alice a ex:Person ;
+    rdfs:label "Alice" ;
+    rdfs:comment "示例人物 A" ;
+    ex:knows ex:bob .
+
+ex:bob a ex:Person ;
+    rdfs:label "Bob" ;
+    rdfs:comment "示例人物 B" .

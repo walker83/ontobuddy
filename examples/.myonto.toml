@@ -1,0 +1,11 @@
+# 示例配置文件（复制示例本体时配套使用）
+# 用法：把这个文件和对应的 .ttl 一起复制到测试目录
+
+base_iri = 'http://example.org/'
+data_file = 'minimal.ttl'   # 或 'philosophers.ttl'
+prefix = 'ex'
+
+[llm]
+base_url = ''
+api_key = ''
+model = ''
