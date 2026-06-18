@@ -1,0 +1,16 @@
+# 对拍用例 4：混合 —— 含 myonto 支持的 + 不支持的构造
+# 不支持的：rdfs:domain/range（owlrl 会推出类型，myonto 不会 → FN，known-unsupported）
+# 支持的：subClassOf 链（两边应一致）
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:Person a rdfs:Class .
+ex:Scientist rdfs:subClassOf ex:Person .
+ex:Work a rdfs:Class .
+
+ex:wrote rdfs:domain ex:Person ;
+    rdfs:range ex:Work .
+
+ex:newton a ex:Scientist ;
+    ex:wrote ex:principia .

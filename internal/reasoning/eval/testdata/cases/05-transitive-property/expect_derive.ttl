@@ -1,0 +1,6 @@
+@prefix ex: <http://example.org/> .
+
+# finger 的所有祖先（含跨多级）
+ex:finger ex:partOf ex:arm .
+ex:finger ex:partOf ex:body .
+ex:hand ex:partOf ex:body .

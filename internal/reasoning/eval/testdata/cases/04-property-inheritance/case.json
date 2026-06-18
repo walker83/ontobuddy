@@ -1,0 +1,5 @@
+{
+  "name": "property-inheritance",
+  "description": "规则4：a P b, P⊑Q ⟹ a Q b（属性继承）",
+  "rule": "property-inheritance"
+}

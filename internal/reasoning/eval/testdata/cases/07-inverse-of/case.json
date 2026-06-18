@@ -1,0 +1,5 @@
+{
+  "name": "inverse-of",
+  "description": "规则7：owl:inverseOf a P b ⟹ b Q a (Q=inverseOf P)",
+  "rule": "owl:inverseOf"
+}

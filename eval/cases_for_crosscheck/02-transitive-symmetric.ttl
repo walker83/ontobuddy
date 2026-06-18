@@ -1,0 +1,15 @@
+# 对拍用例 2：传递 + 对称 + 子属性
+# 覆盖 myonto 支持的 owl:TransitiveProperty, owl:SymmetricProperty, subPropertyOf。
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+ex:ancestorOf a owl:TransitiveProperty .
+ex:parentOf rdfs:subPropertyOf ex:ancestorOf .
+ex:knows a owl:SymmetricProperty .
+
+ex:a ex:parentOf ex:b .
+ex:b ex:parentOf ex:c .
+ex:c ex:parentOf ex:d .
+ex:alice ex:knows ex:bob .

@@ -1,0 +1,11 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# 不应把 Person 当成 Scientist 的子类（方向反）
+ex:Person rdfs:subClassOf ex:Scientist .
+# 不应把 Agent 当成 Person 的父类的父类（方向反/越级）
+ex:Agent rdfs:subClassOf ex:Scientist .
+# 不应让两个实例互相成为对方的类型
+ex:newton a ex:curie .
+ex:curie a ex:newton .

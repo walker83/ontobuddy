@@ -1,0 +1,7 @@
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# 循环层级中不应推出任何自环（A/B/C 都已等价，但自环被过滤）
+ex:A rdfs:subClassOf ex:A .
+ex:B rdfs:subClassOf ex:B .
+ex:C rdfs:subClassOf ex:C .

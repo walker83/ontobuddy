@@ -1,0 +1,5 @@
+{
+  "name": "combo-philosophers-chain",
+  "description": "组合：subClassOf 传递 + 类型继承多级链（Scientist⊑Person⊑Agent）",
+  "rule": "combo"
+}

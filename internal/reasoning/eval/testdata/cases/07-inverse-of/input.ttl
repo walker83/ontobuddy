@@ -1,0 +1,5 @@
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+ex:teaches owl:inverseOf ex:taughtBy .
+ex:socrates ex:teaches ex:plato .

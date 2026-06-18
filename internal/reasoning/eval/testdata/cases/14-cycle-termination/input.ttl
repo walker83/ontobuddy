@@ -1,0 +1,7 @@
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# 三角环：A⊑B, B⊑C, C⊑A
+ex:A rdfs:subClassOf ex:B .
+ex:B rdfs:subClassOf ex:C .
+ex:C rdfs:subClassOf ex:A .

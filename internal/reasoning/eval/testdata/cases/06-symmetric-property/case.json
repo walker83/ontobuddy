@@ -1,0 +1,5 @@
+{
+  "name": "symmetric-property",
+  "description": "规则6：owl:SymmetricProperty a P b ⟹ b P a",
+  "rule": "owl:SymmetricProperty"
+}

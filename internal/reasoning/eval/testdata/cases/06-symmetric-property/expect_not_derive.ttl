@@ -1,0 +1,5 @@
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# 对称性不应污染其他谓词
+ex:alice rdfs:label ex:bob .

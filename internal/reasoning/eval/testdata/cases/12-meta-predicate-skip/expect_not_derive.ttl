@@ -1,0 +1,4 @@
+@prefix ex: <http://example.org/> .
+
+# 不应推出 foo specialType Bar（rdf:type 被跳过）
+ex:foo ex:specialType ex:Bar .

@@ -1,0 +1,5 @@
+{
+  "name": "no-spurious-selfloop",
+  "description": "边界：等价环 A⊑B, B⊑A 不应推出任何自环 A⊑A / B⊑B",
+  "rule": "subClassOf-transitive"
+}

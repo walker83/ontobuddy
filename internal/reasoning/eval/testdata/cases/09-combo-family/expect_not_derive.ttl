@@ -1,0 +1,6 @@
+@prefix ex: <http://example.org/> .
+
+# fatherOf 不是 Transitive，不应推出 fatherOf 的传递闭包
+ex:abe ex:fatherOf ex:bart .
+# 不应反向
+ex:bart ex:parentOf ex:homer .

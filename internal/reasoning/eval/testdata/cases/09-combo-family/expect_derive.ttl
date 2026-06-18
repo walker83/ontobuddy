@@ -1,0 +1,7 @@
+@prefix ex: <http://example.org/> .
+
+# 属性继承：fatherOf 升格为 parentOf
+ex:abe ex:parentOf ex:homer .
+ex:homer ex:parentOf ex:bart .
+# parentOf 传递闭包
+ex:abe ex:parentOf ex:bart .

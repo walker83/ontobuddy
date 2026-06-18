@@ -1,0 +1,5 @@
+{
+  "name": "domain-range-not-implemented",
+  "description": "边界：rdfs:domain/rdfs:range 当前未实现，不应产生任何推导。钉住能力边界，未来若实现需更新此 case",
+  "rule": "none"
+}

@@ -1,0 +1,21 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# subClassOf 传递：Stoic⊑Philosopher⊑Person ⟹ Stoic⊑Person
+ex:Stoic rdfs:subClassOf ex:Person .
+
+# inverseOf：teaches → taughtBy
+ex:aristotle ex:taughtBy ex:plato .
+ex:alexander ex:taughtBy ex:aristotle .
+
+# 类型继承：epictetus/marcus (Stoic) 继承 Philosopher 和 Person
+ex:epictetus a ex:Philosopher .
+ex:epictetus a ex:Person .
+ex:marcus a ex:Philosopher .
+ex:marcus a ex:Person .
+
+# influences 传递闭包
+ex:socrates ex:influences ex:aristotle .
+ex:plato ex:influences ex:alexander .
+ex:socrates ex:influences ex:alexander .

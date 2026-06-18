@@ -1,0 +1,5 @@
+{
+  "name": "subproperty-transitive",
+  "description": "规则3：P⊑Q, Q⊑R ⟹ P⊑R（subPropertyOf 传递闭包）",
+  "rule": "subPropertyOf-transitive"
+}

@@ -1,0 +1,11 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# subClassOf 传递
+ex:Scientist rdfs:subClassOf ex:Agent .
+# 类型继承（每个实例继承两层）
+ex:newton a ex:Person .
+ex:newton a ex:Agent .
+ex:curie a ex:Person .
+ex:curie a ex:Agent .

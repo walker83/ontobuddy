@@ -1,0 +1,6 @@
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# 不应推出自环或反向
+ex:A rdfs:subClassOf ex:A .
+ex:B rdfs:subClassOf ex:A .

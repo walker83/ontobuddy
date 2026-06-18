@@ -1,0 +1,5 @@
+{
+  "name": "subclass-transitive",
+  "description": "规则1：A⊑B, B⊑C ⟹ A⊑C（subClassOf 传递闭包）",
+  "rule": "subClassOf-transitive"
+}

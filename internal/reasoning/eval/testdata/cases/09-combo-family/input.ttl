@@ -1,0 +1,12 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+# fatherOf 是 parentOf 的子属性
+ex:fatherOf rdfs:subPropertyOf ex:parentOf .
+# parentOf 是传递属性
+ex:parentOf a owl:TransitiveProperty .
+# 家谱：a fatherOf b fatherOf c
+ex:abe ex:fatherOf ex:homer .
+ex:homer ex:fatherOf ex:bart .

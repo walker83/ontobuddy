@@ -1,0 +1,25 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+# 类层级（含多级继承）
+ex:Person a rdfs:Class .
+ex:Philosopher rdfs:subClassOf ex:Person .
+ex:Mathematician rdfs:subClassOf ex:Person .
+ex:Stoic rdfs:subClassOf ex:Philosopher .
+
+# 关系属性（带 owl 声明）
+ex:influences a owl:TransitiveProperty .
+ex:teaches owl:inverseOf ex:taughtBy .
+
+# 师承 + 影响链
+ex:plato ex:teaches ex:aristotle .
+ex:aristotle ex:teaches ex:alexander .
+ex:socrates ex:influences ex:plato .
+ex:plato ex:influences ex:aristotle .
+ex:aristotle ex:influences ex:alexander .
+
+# 实例
+ex:epictetus a ex:Stoic .
+ex:marcus a ex:Stoic .

@@ -1,0 +1,5 @@
+{
+  "name": "meta-predicate-skip",
+  "description": "边界：rdf:type 等元谓词即使出现在 subPropertyOf 体系里也不被属性继承",
+  "rule": "property-inheritance"
+}

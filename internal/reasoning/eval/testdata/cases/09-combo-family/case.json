@@ -1,0 +1,5 @@
+{
+  "name": "combo-family-relations",
+  "description": "组合：subPropertyOf 继承 + transitive 闭包（fatherOf⊑parentOf, parentOf 传递）",
+  "rule": "combo"
+}

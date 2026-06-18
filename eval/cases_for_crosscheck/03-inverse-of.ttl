@@ -1,0 +1,9 @@
+# 对拍用例 3：inverseOf
+# 注意：owlrl 把 inverseOf 当双向，myonto 实现只单向（teaches→taughtBy），
+# 这会产生 FN——属于已知的实现差异，记录到 conformance matrix。
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+ex:teaches owl:inverseOf ex:taughtBy .
+ex:socrates ex:teaches ex:plato .
+ex:plato ex:teaches ex:aristotle .

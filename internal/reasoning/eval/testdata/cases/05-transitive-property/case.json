@@ -1,0 +1,5 @@
+{
+  "name": "transitive-property",
+  "description": "规则5：owl:TransitiveProperty 传递闭包 a P b, b P c ⟹ a P c",
+  "rule": "owl:TransitiveProperty"
+}

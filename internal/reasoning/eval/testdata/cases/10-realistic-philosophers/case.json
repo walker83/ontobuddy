@@ -1,0 +1,5 @@
+{
+  "name": "realistic-philosophers",
+  "description": "真实规模：移植 philosophers.ttl，补 owl 声明（influences:Transitive, teaches inverseOf taughtBy），验证多规则在中等规模下的协同",
+  "rule": "combo"
+}

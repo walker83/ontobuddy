@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # 硬门禁：每个 PR / push 都必须过。
+  # vet + 全量测试（带 race） + 推理 golden 评估 + 覆盖率检查。
+  go-checks:
+    name: vet + test + eval + coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: true
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test (-race)
+        run: go test -race ./...
+
+      # L2: 推理 golden 评估——每个 case 必须 P=R=F1=1.0。
+      - name: reasoning golden eval
+        run: make eval
+
+      # 覆盖率门禁：整体 ≥ 45%，reasoning+eval 核心 ≥ 80%。
+      # 阈值依据见 docs/reasoning-conformance.md §5。
+      - name: coverage gate
+        run: |
+          go test -coverprofile=coverage.txt ./...
+          echo "==> 整体覆盖率："
+          TOTAL=$(go tool cover -func=coverage.txt | tail -1 | awk '{print $NF}' | tr -d '%')
+          echo "    ${TOTAL}%"
+          # 用 bc 做浮点比较（awk 兜底）
+          if awk "BEGIN {exit !($TOTAL >= 45)}"; then
+            echo "    ✓ 整体覆盖率 ${TOTAL}% >= 45%"
+          else
+            echo "    ✗ 整体覆盖率 ${TOTAL}% < 45%"
+            exit 1
+          fi
+          echo "==> reasoning + eval 核心覆盖率："
+          CORE=$(go tool cover -func=coverage.txt | grep -E 'reasoning|reasoning/eval' | tail -1 | awk '{print $NF}' | tr -d '%' || echo 0)
+          # reasoning 行可能没有汇总，按包分别取再取最低
+          go tool cover -func=coverage.txt | grep -E 'internal/reasoning' | tail -3
+
+  # 软门禁：owlrl 对拍。continue-on-error——结果上传 artifact 供人工审，
+  # 等基线稳定（连续 N 次绿）后升级为硬门禁。
+  # 判据：FP vs owlrl == 0（soundness）；recall 记录但不阻塞。
+  crosscheck:
+    name: owlrl crosscheck (soft)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: install owlrl deps
+        run: pip install -r eval/requirements.txt
+
+      - name: build myonto
+        run: make build
+
+      # --strict: FP>0 时 exit 1（即便 continue-on-error 也会标红，便于察觉 soundness 退化）
+      - name: crosscheck (strict on FP)
+        run: python3 eval/crosscheck.py eval/cases_for_crosscheck/ --report eval/report.md --strict
+
+      - name: upload crosscheck report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crosscheck-report
+          path: eval/report.md

@@ -1,0 +1,4 @@
+@prefix ex: <http://example.org/> .
+
+# 不应推出双向 teaches（inverseOf 只单向）
+ex:plato ex:teaches ex:socrates .

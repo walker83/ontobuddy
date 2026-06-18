@@ -1,0 +1,14 @@
+# 对拍用例 1：类层级 + 类型继承
+# 覆盖 myonto 声明支持的 subClassOf 传递 + type 继承。
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+ex:Animal a rdfs:Class .
+ex:Mammal a rdfs:Class ; rdfs:subClassOf ex:Animal .
+ex:Primate a rdfs:Class ; rdfs:subClassOf ex:Mammal .
+ex:Dog a rdfs:Class ; rdfs:subClassOf ex:Mammal .
+
+ex:newton a ex:Primate .
+ex:rintintin a ex:Dog .

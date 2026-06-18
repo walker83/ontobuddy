@@ -1,0 +1,6 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+# domain/range 未实现，不应自动推出类型
+ex:newton a ex:Person .
+ex:principia a ex:Work .

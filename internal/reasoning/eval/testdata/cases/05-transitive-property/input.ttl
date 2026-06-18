@@ -1,0 +1,8 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+ex:partOf a owl:TransitiveProperty .
+ex:finger ex:partOf ex:hand .
+ex:hand ex:partOf ex:arm .
+ex:arm ex:partOf ex:body .

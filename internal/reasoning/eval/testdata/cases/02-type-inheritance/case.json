@@ -1,0 +1,5 @@
+{
+  "name": "type-inheritance",
+  "description": "规则2：x a A, A⊑B ⟹ x a B（类型继承）",
+  "rule": "type-inheritance"
+}

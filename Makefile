@@ -13,7 +13,7 @@ GOOS     ?= $(shell go env GOOS)
 GOARCH   ?= $(shell go env GOARCH)
 LDFLAGS  := -s -w
 
-.PHONY: all setup build test vet fmt install link unlink install-skills uninstall-skills clean help cross-compile
+.PHONY: all setup build test vet fmt install link unlink install-skills uninstall-skills clean help cross-compile eval test-all check coverage
 
 all: build
 
@@ -57,6 +57,28 @@ test:
 ## vet: 静态检查
 vet:
 	go vet ./...
+
+## eval: 跑推理 golden 评估（库层 P/R/F1，无副作用）
+## 每个 golden case 必须 precision=recall=F1=1.0 才算过。
+## 用例见 internal/reasoning/eval/testdata/cases/
+eval:
+	go test -v ./internal/reasoning/eval/ -run 'TestRunAllCases'
+
+## coverage: 生成覆盖率报告到 coverage.txt，并断言整体覆盖率达标
+coverage:
+	go test -coverprofile=coverage.txt ./...
+	@echo "==> 覆盖率摘要："
+	@go tool cover -func=coverage.txt | tail -1
+
+## check: 本地一站式门禁（vet + test + eval），CI 跑等价命令
+check: vet test eval
+	@echo "==> ✓ vet / test / eval 全过"
+
+## crosscheck: 跑 owlrl 对拍（需 Python3 + rdflib + owlrl；pip install -r eval/requirements.txt）
+## 非每 PR 必跑——作为周期性基线，验证 myonto 不比 OWL 2 RL 标准多推/少推。
+## 加 --strict 让 FP>0 时 exit 1（CI 硬门禁用）。
+crosscheck: build
+	python3 eval/crosscheck.py eval/cases_for_crosscheck/ --report eval/report.md
 
 ## fmt: 格式化代码
 fmt:

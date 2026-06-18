@@ -1,0 +1,5 @@
+{
+  "name": "cycle-termination",
+  "description": "边界：循环类层级 A⊑B⊑C⊑A 必须有限步终止，且不产生任何自环",
+  "rule": "subClassOf-transitive"
+}

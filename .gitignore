@@ -20,7 +20,11 @@ coverage.txt
 # ontology.ttl
 # .myonto.toml
 
-# 可视化输出
-*.html
-!internal/assets/*.html
+# 可视化输出（生成的力导向图 HTML，不进 git）
+/*.html
+# internal/ 下的 HTML 是 go:embed 模板，必须追踪
 skills/myonto/bin/
+
+# 对拍生成的报告（make crosscheck 产出，属运行时产物）
+eval/report.md
+

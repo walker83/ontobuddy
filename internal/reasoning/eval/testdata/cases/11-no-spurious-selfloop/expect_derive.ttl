@@ -1,0 +1,5 @@
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# 等价环本身不产生新三元组（A⊑B, B⊑A 是输入；自环被过滤）
+# 所以此文件为空——无期望推导。

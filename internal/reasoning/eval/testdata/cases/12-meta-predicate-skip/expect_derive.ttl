@@ -1,0 +1,4 @@
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# rdf:type 在元谓词跳过清单里，不参与属性继承，故无任何推导。

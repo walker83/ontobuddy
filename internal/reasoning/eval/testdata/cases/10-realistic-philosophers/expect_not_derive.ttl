@@ -1,0 +1,12 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# taughtBy 不应反向推出 teaches（inverseOf 单向实现）
+ex:plato ex:teaches ex:socrates .
+# Person 不应成为 Stoic 的子类（方向反）
+ex:Person rdfs:subClassOf ex:Stoic .
+# influences 不应反向（非对称）
+ex:aristotle ex:influences ex:socrates .
+# 普通人不应自动变成 Stoic
+ex:plato a ex:Stoic .

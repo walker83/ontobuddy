@@ -1,0 +1,7 @@
+@prefix ex: <http://example.org/> .
+
+# 不应推出反向关系
+ex:body ex:partOf ex:arm .
+ex:arm ex:partOf ex:finger .
+# 不应推出自环
+ex:finger ex:partOf ex:finger .
