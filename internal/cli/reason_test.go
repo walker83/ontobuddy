@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/walker/myonto/internal/rdf"
 )
 
 // reasonFixture 创建一个有类继承的最小本体，便于跑推理。
@@ -196,5 +198,131 @@ ex:curie  a ex:Primate .
 		t.Errorf("limit=2 apply 后应已物化全部 %d 条推导（二次推理应饱和），"+
 			"但还有 %d 条未物化 → H1 修复失效\n输出: %s",
 			totalDerived, len(after.Derived), out2)
+	}
+}
+
+// TestInferredBy_EncodeDecodeRoundTrip 验证 inferredBy 标记的可逆编解码。
+// 这是 reason --reset 正确性的基石：reset 依赖 decode 还原推论三元组来精确删除。
+// 如果编解码不对称，reset 会漏删或误删。
+func TestInferredBy_EncodeDecodeRoundTrip(t *testing.T) {
+	cases := []rdf.Triple{
+		// 普通类型继承推论
+		{Subject: rdf.IRI("http://example.org/newton"),
+			Predicate: rdf.Type, Object: rdf.IRI("http://example.org/Person")},
+		// subClassOf 传递推论
+		{Subject: rdf.IRI("http://example.org/A"),
+			Predicate: rdf.SubClassOf, Object: rdf.IRI("http://example.org/C")},
+		// 字面量 object（带特殊字符 + 转义）
+		{Subject: rdf.IRI("http://example.org/x"),
+			Predicate: rdf.IRI("http://example.org/label"),
+			Object:    rdf.Lit(`hello "world"\n`)},
+		// 语言标签字面量
+		{Subject: rdf.IRI("http://example.org/x"),
+			Predicate: rdf.IRI("http://example.org/desc"),
+			Object:    rdf.LangLit("你好", "zh")},
+		// 类型化字面量
+		{Subject: rdf.IRI("http://example.org/x"),
+			Predicate: rdf.IRI("http://example.org/year"),
+			Object:    rdf.TypedLit("1642", rdf.XSDInteger)},
+		// blank node object
+		{Subject: rdf.IRI("http://example.org/x"),
+			Predicate: rdf.IRI("http://example.org/rel"),
+			Object:    rdf.Blank("b1")},
+	}
+	for _, tc := range cases {
+		encoded := encodeInferredBy(tc)
+		got, ok := decodeInferredBy(tc.Subject, encoded)
+		if !ok {
+			t.Errorf("解码失败: %q", encoded)
+			continue
+		}
+		if !got.Equal(tc) {
+			t.Errorf("往返不一致:\n  原:   %s\n  解码: %s\n  编码: %q", tc, got, encoded)
+		}
+	}
+}
+
+// TestInferredBy_BothPathsUseSameEncoding 验证 --json 和人类可读两条 apply 路径
+// 产出完全相同的 inferredBy 编码。历史上两者不一致（"reasoner:<pred>" vs 裸 "reasoner"），
+// 这是 materialize 重构要钉死的回归点。
+func TestInferredBy_BothPathsUseSameEncoding(t *testing.T) {
+	// 用两个独立 fixture，分别走 JSON 和人类可读 apply。
+	dirJSON := reasonFixture(t)
+	captureStdout(t, func() {
+		_ = runInDir(t, dirJSON, []string{"reason", "--json", "--apply"})
+	})
+	ttlJSON, _ := os.ReadFile(filepath.Join(dirJSON, "ontology.ttl"))
+
+	dirHuman := reasonFixture(t)
+	captureStdout(t, func() {
+		_ = runInDir(t, dirHuman, []string{"reason", "--apply"})
+	})
+	ttlHuman, _ := os.ReadFile(filepath.Join(dirHuman, "ontology.ttl"))
+
+	// 两条路径物化后的本体应字节级一致（同样的推论 + 同样的 inferredBy 编码）。
+	// 差异只可能来自 inferredBy 编码不一致——正是此测试要捕捉的。
+	if string(ttlJSON) != string(ttlHuman) {
+		t.Errorf("JSON 与人类可读 apply 路径产出不一致：\n--- JSON ---\n%s\n--- Human ---\n%s",
+			ttlJSON, ttlHuman)
+	}
+
+	// 并验证两者都用新可逆格式（编码以 "reasoner" 开头 + 分隔符），不是旧裸 "reasoner"。
+	// 注意：Turtle 序列化会把 Tab 转义成字面 \t，所以匹配转义形式。
+	for _, ttl := range []string{string(ttlJSON), string(ttlHuman)} {
+		if !strings.Contains(ttl, `"reasoner\`) { // 编码形如 "reasoner\t<iri>\t<obj>"
+			t.Errorf("inferredBy 应使用新可逆编码（reasoner\\t...），实际: %s", ttl)
+		}
+		// 旧格式是裸 "reasoner" 后紧跟引号，绝不能出现。
+		if strings.Contains(ttl, `"reasoner"`) {
+			t.Errorf("inferredBy 不应残留旧裸格式 \"reasoner\"，实际: %s", ttl)
+		}
+	}
+}
+
+// TestReason_ResetIdempotent 验证连续两次 reset 行为：第二次应报告无可清除。
+// 这钉住 resetInferred 在空标记集上的安全性。
+func TestReason_ResetIdempotent(t *testing.T) {
+	dir := reasonFixture(t)
+	// 物化
+	captureStdout(t, func() {
+		_ = runInDir(t, dir, []string{"reason", "--apply"})
+	})
+	// 第一次 reset：应清除
+	out1 := captureStdout(t, func() {
+		_ = runInDir(t, dir, []string{"reason", "--reset"})
+	})
+	if !strings.Contains(out1, "已清除") {
+		t.Errorf("第一次 reset 应报告清除，实际: %s", out1)
+	}
+	// 第二次 reset：应报告无可清除
+	out2 := captureStdout(t, func() {
+		_ = runInDir(t, dir, []string{"reason", "--reset"})
+	})
+	if !strings.Contains(out2, "无标记为推论") {
+		t.Errorf("第二次 reset 应报告无标记，实际: %s", out2)
+	}
+}
+
+// TestReason_ResetPreservesOriginalData 验证 reset 不误删原始数据。
+// 关键场景：subject 既有原始三元组又有推论（newton 同时有 a Scientist [原始] 和 a Person [推论]）。
+// reset 后 a Scientist 必须保留，a Person 必须删除。这是预存"按 subject 粗删"bug 的根因防御。
+func TestReason_ResetPreservesOriginalData(t *testing.T) {
+	dir := reasonFixture(t)
+	captureStdout(t, func() {
+		_ = runInDir(t, dir, []string{"reason", "--apply"})
+	})
+	// 物化后应同时含 Scientist（原始）和 Person（推论）
+	ttl, _ := os.ReadFile(filepath.Join(dir, "ontology.ttl"))
+	if !strings.Contains(string(ttl), "Scientist") || !strings.Contains(string(ttl), "Person") {
+		t.Fatalf("物化后应含 Scientist 和 Person，实际: %s", ttl)
+	}
+	// reset
+	captureStdout(t, func() {
+		_ = runInDir(t, dir, []string{"reason", "--reset"})
+	})
+	ttl2, _ := os.ReadFile(filepath.Join(dir, "ontology.ttl"))
+	// Scientist 必须保留（原始数据）
+	if !strings.Contains(string(ttl2), "Scientist") {
+		t.Errorf("reset 不应删除原始的 newton a Scientist，实际: %s", ttl2)
 	}
 }
