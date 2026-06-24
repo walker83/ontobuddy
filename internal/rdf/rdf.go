@@ -165,12 +165,16 @@ var (
 	SubClassOf    = RDFS.IRI("subClassOf")
 	SubPropertyOf = RDFS.IRI("subPropertyOf")
 	Class         = RDFS.IRI("Class")
+	Domain        = RDFS.IRI("domain")
+	Range         = RDFS.IRI("range")
 
 	OwlClass           = OWL.IRI("Class")
 	OwlObjectProperty  = OWL.IRI("ObjectProperty")
 	TransitiveProperty = OWL.IRI("TransitiveProperty")
 	SymmetricProperty  = OWL.IRI("SymmetricProperty")
 	InverseOf          = OWL.IRI("inverseOf")
+	DisjointWith       = OWL.IRI("disjointWith")
+	EquivalentClass    = OWL.IRI("equivalentClass")
 )
 
 // IRI 返回该命名空间下指定 local name 的 IRI Term。

@@ -1,0 +1,11 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+# 不应推出反向依赖（rdf 不依赖 cmd）
+ex:pkg-rdf ex:dependsOn ex:pkg-cmd .
+ex:pkg-crypto ex:dependsOn ex:pkg-config .
+# 不应推出自环
+ex:pkg-cmd ex:dependsOn ex:pkg-cmd .
+ex:pkg-rdf ex:dependsOn ex:pkg-rdf .
+# 叶子包不应推出对任何包的依赖
+ex:pkg-crypto ex:dependsOn ex:pkg-cli .

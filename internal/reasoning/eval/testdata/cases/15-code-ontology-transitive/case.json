@@ -1,0 +1,5 @@
+{
+  "name": "code-ontology-transitive",
+  "description": "自测试：用 myonto 自身代码的包依赖图（cmd→cli→store→rdf）建模成本体，验证 owl:TransitiveProperty 能推出传递依赖。这是'用本体测试本体'的元测试用例。",
+  "rule": "owl:TransitiveProperty"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "disjoint-conflict",
+  "description": "一致性检查：Cat 与 Dog 互斥，felix 同时声明为两者，应被 check 检测到 1 个 error。验证 owl:disjointWith 违规检测通道。",
+  "rule": "check:owl:disjointWith",
+  "expect_findings": [
+    {
+      "severity": "error",
+      "rule": "owl:disjointWith",
+      "subject": "felix"
+    }
+  ]
+}

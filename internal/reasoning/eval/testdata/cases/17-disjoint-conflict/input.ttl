@@ -1,0 +1,10 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+# Cat 和 Dog 互斥
+ex:Cat owl:disjointWith ex:Dog .
+
+# felix 同时声明为 Cat 和 Dog —— 违反 disjointWith 约束
+ex:felix a ex:Cat ;
+    a ex:Dog .

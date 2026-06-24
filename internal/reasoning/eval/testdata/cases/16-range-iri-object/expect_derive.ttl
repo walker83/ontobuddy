@@ -1,0 +1,5 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+# range: IRI 宾语正常推导
+ex:woolsthorpe a ex:Place .

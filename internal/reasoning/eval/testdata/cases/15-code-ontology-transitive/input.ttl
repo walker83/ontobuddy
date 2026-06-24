@@ -1,0 +1,25 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+# 代码本体的 schema（取自 myonto 实际代码结构建模）
+ex:CodeElement a rdfs:Class .
+ex:Package a rdfs:Class ; rdfs:subClassOf ex:CodeElement .
+
+# dependsOn 声明为传递属性（关键）
+ex:dependsOn a owl:TransitiveProperty .
+
+# myonto 真实的包依赖链（封闭子图）：
+#   cmd/myonto → cli
+#   cli → store, reasoning
+#   store → rdf, config
+#   reasoning → rdf
+#   config → crypto
+ex:pkg-cmd a ex:Package ; ex:dependsOn ex:pkg-cli .
+ex:pkg-cli a ex:Package ; ex:dependsOn ex:pkg-store ; ex:dependsOn ex:pkg-reasoning .
+ex:pkg-store a ex:Package ; ex:dependsOn ex:pkg-rdf ; ex:dependsOn ex:pkg-config .
+ex:pkg-reasoning a ex:Package ; ex:dependsOn ex:pkg-rdf .
+ex:pkg-config a ex:Package ; ex:dependsOn ex:pkg-crypto .
+ex:pkg-rdf a ex:Package .
+ex:pkg-crypto a ex:Package .

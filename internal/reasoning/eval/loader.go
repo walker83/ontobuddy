@@ -12,19 +12,21 @@ import (
 
 // Case 是单个评估用例的内存表示。
 type Case struct {
-	Name            string       // 用例名（取自 case.json，回退到目录名）
-	Description     string       // 人类可读描述
-	Rule            string       // 对应的规则名（如 "subClassOf-transitive"）
-	Input           []rdf.Triple // 输入本体
-	ExpectDerive    []rdf.Triple // 期望推出（正例，漏 = FN）
-	ExpectNotDerive []rdf.Triple // 绝不应推出（负例，推 = FP）
+	Name            string           // 用例名（取自 case.json，回退到目录名）
+	Description     string           // 人类可读描述
+	Rule            string           // 对应的规则名（如 "subClassOf-transitive"）
+	Input           []rdf.Triple     // 输入本体
+	ExpectDerive    []rdf.Triple     // 期望推出（正例，漏 = FN）
+	ExpectNotDerive []rdf.Triple     // 绝不应推出（负例，推 = FP）
+	ExpectFindings  []ExpectedFinding // 期望的检查发现（可选；有则跑 check 评估）
 }
 
 // caseMeta 是 case.json 的结构。
 type caseMeta struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Rule        string `json:"rule"`
+	Name           string           `json:"name"`
+	Description    string           `json:"description"`
+	Rule           string           `json:"rule"`
+	ExpectFindings []ExpectedFinding `json:"expect_findings"`
 }
 
 // LoadCase 从一个 case 目录加载用例。
@@ -49,6 +51,7 @@ func LoadCase(dir string) (Case, error) {
 			return c, fmt.Errorf("case %s: 解析 case.json: %w", dir, err)
 		}
 		c.Name, c.Description, c.Rule = meta.Name, meta.Description, meta.Rule
+		c.ExpectFindings = meta.ExpectFindings
 	}
 	if c.Name == "" {
 		c.Name = filepath.Base(dir)

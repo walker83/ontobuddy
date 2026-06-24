@@ -1,0 +1,8 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# bornIn 声明 range 为 Place
+ex:bornIn rdfs:range ex:Place .
+# newton 出生在 woolsthorpe（IRI 实体）—— range 应推出 woolsthorpe a Place
+ex:newton ex:bornIn ex:woolsthorpe .

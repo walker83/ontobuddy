@@ -23,6 +23,10 @@ type CLI struct {
 	Export  ExportCmd  `cmd:"" help:"导出当前本体（-l 给 LLM / -j JSON / 默认 Turtle）"`
 	List    ListCmd    `cmd:"" help:"列出本体中的所有实体"`
 	Reason  ReasonCmd  `cmd:"" help:"基于 RDFS/OWL 规则跑推理（subClassOf 传递/类型继承/传递属性等）"`
+	Check   CheckCmd   `cmd:"" help:"一致性检查：报告违反 owl:disjointWith 等约束的矛盾"`
+	Closure ClosureCmd `cmd:"" help:"算某实体沿谓词的传递闭包（不物化，纯查询）"`
+	Path    PathCmd    `cmd:"" help:"找两实体间的最短路径（BFS）"`
+	Query   QueryCmd   `cmd:"" help:"轻量查询：三元组模式匹配 + GROUP BY/COUNT/Top-N（SPARQL 子集）"`
 	Graph   GraphCmd   `cmd:"" help:"生成交互式力导向图（HTML），可自动打开浏览器"`
 	AI      AICmd      `cmd:"" help:"用 LLM 辅助整理本体（summarize/extract/suggest-relations/qa，默认 dry-run）"`
 	Config  ConfigCmd  `cmd:"" help:"管理配置（如 LLM：set-key 加密、show、test、list-providers）"`
@@ -93,7 +97,7 @@ type exitSignal struct{ code int }
 // RunArgs 用显式传入的 args 解析，主要供测试使用。
 // 与 Run 不同：它不会在 help/错误时调 os.Exit，而是返回 error，
 // 便于测试断言。
-func RunArgs(args []string) error {
+func RunArgs(args []string) (err error) {
 	var cli CLI
 	k, err := kong.New(&cli,
 		kong.Name("myonto"),
@@ -116,6 +120,22 @@ func RunArgs(args []string) error {
 	if ctx == nil {
 		return nil
 	}
+	// 测试模式下把 exitWith 换成 panic，并用 recover 捕获，
+	// 使 path/check 等命令的 os.Exit(1) 不杀测试进程。
+	origExit := exitWith
+	exitWith = func(code int) { panic(exitSignal{code}) }
+	defer func() {
+		exitWith = origExit
+		if r := recover(); r != nil {
+			if sig, ok := r.(exitSignal); ok {
+				if sig.code != 0 {
+					err = fmt.Errorf("exit %d", sig.code)
+				}
+				return
+			}
+			panic(r)
+		}
+	}()
 	return ctx.Run()
 }
 

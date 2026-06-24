@@ -1,0 +1,26 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+# === dependsOn 传递闭包（owl:TransitiveProperty）===
+# cmd/myonto 间接依赖底层包（经 cli→store/reasoning→rdf/config→crypto）
+ex:pkg-cmd ex:dependsOn ex:pkg-store .
+ex:pkg-cmd ex:dependsOn ex:pkg-reasoning .
+ex:pkg-cmd ex:dependsOn ex:pkg-rdf .
+ex:pkg-cmd ex:dependsOn ex:pkg-config .
+ex:pkg-cmd ex:dependsOn ex:pkg-crypto .
+# cli 间接依赖
+ex:pkg-cli ex:dependsOn ex:pkg-rdf .
+ex:pkg-cli ex:dependsOn ex:pkg-config .
+ex:pkg-cli ex:dependsOn ex:pkg-crypto .
+# store 间接依赖
+ex:pkg-store ex:dependsOn ex:pkg-crypto .
+
+# === 类型继承（subClassOf + rdf:type）===
+# 每个 Package 实例自动成为 CodeElement
+ex:pkg-cmd rdf:type ex:CodeElement .
+ex:pkg-cli rdf:type ex:CodeElement .
+ex:pkg-store rdf:type ex:CodeElement .
+ex:pkg-reasoning rdf:type ex:CodeElement .
+ex:pkg-config rdf:type ex:CodeElement .
+ex:pkg-rdf rdf:type ex:CodeElement .
+ex:pkg-crypto rdf:type ex:CodeElement .

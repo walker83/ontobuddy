@@ -7,6 +7,8 @@
 //  4. owl:TransitiveProperty：a P b, b P c ⟹ a P c（P 声明为 Transitive）
 //  5. owl:SymmetricProperty：a P b ⟹ b P a
 //  6. owl:inverseOf：a P b ⟹ b Q a（Q = inverse of P）
+//  7. rdfs:domain：x P y, P domain C ⟹ x a C
+//  8. rdfs:range：x P y, P range C ⟹ y a C（仅当 y 是 IRI；字面量不加类型）
 //
 // 注意：本项目**不实现完整的 OWL 2 DL 推理**（那需要 Java + HermiT/Pellet）。
 // 这些是 OWL 2 RL 风格的「可规则化」子集，足以覆盖 90% 的个人本体场景。
@@ -87,6 +89,8 @@ func (r *Reasoner) Derive() []rdf.Triple {
 		transitivePropertyRule{r: r},
 		symmetricPropertyRule{r: r},
 		inverseOfRule{r: r},
+		domainRule{},
+		rangeRule{},
 	}
 
 	for {
@@ -307,6 +311,87 @@ func (inverseOfRule) Apply(known []rdf.Triple, r *Reasoner) []rdf.Triple {
 		}
 	}
 	return out
+}
+
+// 规则 8：rdfs:domain —— x P y, P domain C ⟹ x a C
+//
+// 建谓词→域类索引，对每条以该谓词连接的三元组，把类型加给主语。
+// 推出的 x a C 会喂回 typeInheritanceRule（x a C, C⊑D ⟹ x a D），
+// 由不动点循环自动传播，无需特殊编排。
+type domainRule struct{}
+
+func (domainRule) Name() string { return "rdfs:domain" }
+func (domainRule) Apply(known []rdf.Triple, _ *Reasoner) []rdf.Triple {
+	domainOf := map[rdf.Term][]rdf.Term{}
+	for _, t := range known {
+		if t.Predicate.Equal(rdf.Domain) {
+			domainOf[t.Subject] = append(domainOf[t.Subject], t.Object)
+		}
+	}
+	if len(domainOf) == 0 {
+		return nil
+	}
+	var out []rdf.Triple
+	for _, t := range known {
+		// 跳过元谓词——给 rdfs:subClassOf 等加类型无意义，也避免给 schema 三元组的 subject 污染类型。
+		if isMetaPredicate(t.Predicate) {
+			continue
+		}
+		// 跳过 P 自身的 schema 声明（P a ObjectProperty / P domain C 这类）。
+		if t.Predicate.Equal(rdf.Type) || t.Predicate.Equal(rdf.Domain) || t.Predicate.Equal(rdf.Range) {
+			continue
+		}
+		for _, c := range domainOf[t.Predicate] {
+			out = append(out, rdf.Triple{Subject: t.Subject, Predicate: rdf.Type, Object: c})
+		}
+	}
+	return out
+}
+
+// 规则 9：rdfs:range —— x P y, P range C ⟹ y a C（仅当 y 是 IRI）
+//
+// 关键 soundness 守卫：字面量 object 不加类型（字面量没有类型身份，
+// 给 "1643" 加 rdf:type Person 语义错误且会让去重失效）。
+type rangeRule struct{}
+
+func (rangeRule) Name() string { return "rdfs:range" }
+func (rangeRule) Apply(known []rdf.Triple, _ *Reasoner) []rdf.Triple {
+	rangeOf := map[rdf.Term][]rdf.Term{}
+	for _, t := range known {
+		if t.Predicate.Equal(rdf.Range) {
+			rangeOf[t.Subject] = append(rangeOf[t.Subject], t.Object)
+		}
+	}
+	if len(rangeOf) == 0 {
+		return nil
+	}
+	var out []rdf.Triple
+	for _, t := range known {
+		if isMetaPredicate(t.Predicate) {
+			continue
+		}
+		if t.Predicate.Equal(rdf.Type) || t.Predicate.Equal(rdf.Domain) || t.Predicate.Equal(rdf.Range) {
+			continue
+		}
+		// soundness：字面量 object 不加类型。
+		if t.Object.Kind != rdf.KindIRI {
+			continue
+		}
+		for _, c := range rangeOf[t.Predicate] {
+			out = append(out, rdf.Triple{Subject: t.Object, Predicate: rdf.Type, Object: c})
+		}
+	}
+	return out
+}
+
+// isMetaPredicate 判断一个谓词是否为 RDFS/OWL 内置元谓词。
+// 对这些谓词的三元组不做 domain/range 推导——它们描述 schema 本身，
+// 给其主语/宾语加用户类型会污染本体。
+func isMetaPredicate(p rdf.Term) bool {
+	return p.Equal(rdf.Label) || p.Equal(rdf.Comment) ||
+		p.Equal(rdf.SubClassOf) || p.Equal(rdf.SubPropertyOf) ||
+		p.Equal(rdf.DisjointWith) || p.Equal(rdf.EquivalentClass) ||
+		p.Equal(rdf.InverseOf)
 }
 
 // --- 工具 ---

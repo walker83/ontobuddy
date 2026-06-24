@@ -160,6 +160,77 @@ bin/myonto reason -n 50     # 最多展示 50 条
 
 ---
 
+## `myonto check` — 一致性检查
+
+检查本体是否违反自身声明的约束（如 `owl:disjointWith`）。与 `reason` 不同：`reason` 推导隐含成立的三元组，`check` 报告**不应存在的矛盾**（不可物化，是错误报告）。
+
+```bash
+bin/myonto check                  # 跑检查，打印发现的问题
+bin/myonto check --strict         # 有 error 级问题时退出码 1（CI 门禁）
+bin/myonto check --json           # 结构化输出
+```
+
+当前支持：`owl:disjointWith` 违规检测（含经 `subClassOf` 继承的隐式冲突）。
+
+---
+
+## `myonto closure <entity> -p <predicate>` — 传递闭包查询
+
+算某实体沿指定谓词的传递闭包（不物化，纯查询）。典型用途：**影响面分析**——"改了 store 包，间接影响哪些？"。
+
+```bash
+bin/myonto closure cmd -p dependsOn           # cmd 依赖的全部包（正向）
+bin/myonto closure rdf -p dependsOn -r        # 谁依赖了 rdf（反向）
+bin/myonto closure alice -p reportsTo -d 2    # 限制 2 跳
+bin/myonto closure cmd -p dependsOn --json    # 结构化输出
+```
+
+| Flag | 说明 |
+|---|---|
+| `-p PRED` | 沿此谓词展开（必填） |
+| `-r` | 反向遍历（宾语 → 主语） |
+| `-d N` | 最大深度（0=无限） |
+
+注意：在**原始边集**上 BFS，深度反映真实跳数。如需含隐式边的闭包，先 `reason -a` 物化。
+
+---
+
+## `myonto path <from> <to>` — 最短路径
+
+找两实体间的最短路径（BFS）。典型用途：**关系解释**——"A 和 B 怎么关联上的？"。
+
+```bash
+bin/myonto path alice bob                   # 任意谓词的最短路径
+bin/myonto path alice bob -p knows          # 只走 knows 关系
+bin/myonto path alice bob --json            # 结构化输出
+```
+
+找不到路径时退出码 1（便于脚本判断连通性）。
+
+---
+
+## `myonto query` — 轻量查询引擎（SPARQL 子集）
+
+三元组模式匹配 + GROUP BY / COUNT / Top-N。**自动包含推理推出的隐式知识**（这是本体驱动分析的核心价值）。
+
+```bash
+bin/myonto query -w "?s a ex:Person"                          # 列出所有 Person（含子类实例）
+bin/myonto query -w "?s ex:bornIn ?o" -g "?o" -c              # 按出生地分组计数
+bin/myonto query -w "?s ex:knows ?o" -g "?o" -c -n 5          # Top 5 社交达人
+bin/myonto query -w "?s ex:knows ?o" -w "?o ex:knows ex:carol" # JOIN：谁认识 carol 的朋友
+bin/myonto query -w "?s a ex:Scientist" --json                # 结构化输出
+```
+
+| Flag | 说明 |
+|---|---|
+| `-w 'S P O'` | 三元组模式（`?var` 为变量，`a` = rdf:type，多 `-w` 做 JOIN） |
+| `-g VAR` | 按变量分组（`?` 前缀可选） |
+| `-c` | COUNT 每组元素数 |
+| `-n N` | Top-N |
+| `-d` | 结果去重 |
+
+---
+
 ## `myonto graph [-o FILE] [-O] [--include-pred PRED] [--include-labels KEYWORD]`
 
 生成交互式力导向图 HTML（vis-network）。

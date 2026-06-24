@@ -152,3 +152,78 @@ func TestOriginalsNotInOutput(t *testing.T) {
 	}
 	_ = c
 }
+
+// TestDomainRule 验证 rdfs:domain：x P y, P domain C ⟹ x a C。
+// 同时验证 domain 推出的类型会喂回 typeInheritanceRule（newton a Person ⊑ Agent ⟹ newton a Agent）。
+func TestDomainRule(t *testing.T) {
+	wrote, person, agent, newton, principia :=
+		makeIRI("wrote"), makeIRI("Person"), makeIRI("Agent"), makeIRI("newton"), makeIRI("principia")
+	r := NewReasoner([]rdf.Triple{
+		{Subject: wrote, Predicate: rdf.Domain, Object: person},
+		{Subject: person, Predicate: rdf.SubClassOf, Object: agent},
+		{Subject: newton, Predicate: wrote, Object: principia},
+	})
+	got := r.Derive()
+	// domain 直接结论
+	if !hasTriple(got, rdf.Triple{Subject: newton, Predicate: rdf.Type, Object: person}) {
+		t.Errorf("应推出 newton a Person，实际: %v", got)
+	}
+	// 与 typeInheritance 协同：Person ⊑ Agent ⟹ newton a Agent
+	if !hasTriple(got, rdf.Triple{Subject: newton, Predicate: rdf.Type, Object: agent}) {
+		t.Errorf("应推出 newton a Agent（domain + 类型继承），实际: %v", got)
+	}
+}
+
+// TestRangeRule 验证 rdfs:range：x P y, P range C ⟹ y a C（y 为 IRI）。
+func TestRangeRule(t *testing.T) {
+	wrote, work, newton, principia :=
+		makeIRI("wrote"), makeIRI("Work"), makeIRI("newton"), makeIRI("principia")
+	r := NewReasoner([]rdf.Triple{
+		{Subject: wrote, Predicate: rdf.Range, Object: work},
+		{Subject: newton, Predicate: wrote, Object: principia},
+	})
+	got := r.Derive()
+	if !hasTriple(got, rdf.Triple{Subject: principia, Predicate: rdf.Type, Object: work}) {
+		t.Errorf("应推出 principia a Work，实际: %v", got)
+	}
+}
+
+// TestRangeRule_LiteralSkipped 是 soundness 守卫：range 不给字面量宾语加类型。
+// 字面量无类型身份，给它加 rdf:type 语义错误。TTL 不允许字面量做主语，
+// 所以这个负例无法写成 eval golden case，只能在此单测覆盖。
+func TestRangeRule_LiteralSkipped(t *testing.T) {
+	wrote, place, newton :=
+		makeIRI("wrote"), makeIRI("Place"), makeIRI("newton")
+	r := NewReasoner([]rdf.Triple{
+		{Subject: wrote, Predicate: rdf.Range, Object: place},
+		// 宾语是字面量 "Woolsthorpe"
+		{Subject: newton, Predicate: wrote, Object: rdf.Lit("Woolsthorpe")},
+	})
+	got := r.Derive()
+	for _, gt := range got {
+		// 任何以字面量为主语的三元组都不应出现
+		if gt.Subject.Kind == rdf.KindLiteral {
+			t.Errorf("不应给字面量加类型，但推出: %v", gt)
+		}
+	}
+}
+
+// TestDomainRange_MetaPredicateSkipped 验证 domain/range 不对元谓词三元组生效。
+// 例如 newton a Person 不应触发 domain（type 不是用户数据谓词）。
+func TestDomainRange_MetaPredicateSkipped(t *testing.T) {
+	wrote, person, newton := makeIRI("wrote"), makeIRI("Person"), makeIRI("newton")
+	// 给 wrote 声明 domain，但不给 type/label 等元谓词做任何 domain 推导
+	r := NewReasoner([]rdf.Triple{
+		{Subject: wrote, Predicate: rdf.Domain, Object: person},
+		// 这条三元组的谓词是 rdf:type（元谓词），不应触发 domain
+		{Subject: newton, Predicate: rdf.Type, Object: person},
+	})
+	got := r.Derive()
+	// newton a person 是原始三元组，不应被重复推出
+	// 也不应有其他污染。关键：不应因为 type 出现而错误推导。
+	for _, gt := range got {
+		if gt.Predicate.Equal(rdf.Type) && gt.Subject.Equal(newton) {
+			t.Errorf("元谓词 type 不应触发 domain 推导，但推出: %v", gt)
+		}
+	}
+}

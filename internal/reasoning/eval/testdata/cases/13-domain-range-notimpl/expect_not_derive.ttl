@@ -1,6 +1,8 @@
 @prefix ex: <http://example.org/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
-# domain/range 未实现，不应自动推出类型
-ex:newton a ex:Person .
-ex:principia a ex:Work .
+# 不应错配：domain 给主语、range 给宾语，不能反向
+# newton 不应被推出 a Work（newton 是主语，走 domain 得 Person）
+ex:newton a ex:Work .
+# principia 不应被推出 a Person（principia 是宾语，走 range 得 Work）
+ex:principia a ex:Person .

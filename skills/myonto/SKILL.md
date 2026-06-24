@@ -1,6 +1,6 @@
 ---
 name: myonto
-description: CLI for managing a personal RDF/OWL ontology (entity-relationship knowledge graph stored as Turtle). Use when creating/editing/listing typed entities, linking them with predicates, querying or searching the graph, running RDFS/OWL inference, generating interactive visualizations, or invoking LLM-assisted ontology maintenance. Trigger on "remember", "what do I know about", "add an entity", "link X to Y", "show relationships", "list entities", "run inference", "visualize", or any request involving a local knowledge graph stored in ontology.ttl.
+description: CLI for managing a personal RDF/OWL ontology (entity-relationship knowledge graph stored as Turtle). Use when creating/editing/listing typed entities, linking them with predicates, querying or searching the graph, running RDFS/OWL inference, checking consistency, computing transitive closure or shortest paths, aggregating/grouping entities (SPARQL-like), generating interactive visualizations, or invoking LLM-assisted ontology maintenance. Trigger on "remember", "what do I know about", "add an entity", "link X to Y", "show relationships", "list entities", "run inference", "check consistency", "impact analysis", "transitive closure", "shortest path", "group by / count entities", "visualize", or any request involving a local knowledge graph stored in ontology.ttl.
 ---
 
 # myonto
@@ -43,6 +43,11 @@ The local namespace IRI is configurable in `.myonto.toml` (default `ex:` → `ht
 | "unlink X from Y" | `bin/myonto unlink X knows Y` |
 | "delete entity X" | `bin/myonto entity rm X -f` |
 | "find what would follow from my data" | `bin/myonto reason` |
+| "check for inconsistencies" | `bin/myonto check` |
+| "what does X transitively depend on" | `bin/myonto closure <X> -p <pred>` |
+| "what depends on X" | `bin/myonto closure <X> -p <pred> -r` |
+| "how are A and B related" | `bin/myonto path <A> <B>` |
+| "count entities by type / group by" | `bin/myonto query -w "?s a ?o" -g "?o" -c` |
 | "show me a graph" | `bin/myonto graph` |
 | "summarize this entity in plain English" | `bin/myonto ai summarize <name>` |
 | "extract entities from this text" | `bin/myonto ai extract "<text>"` |
@@ -62,6 +67,11 @@ All commands that read data accept `--json` (global flag) for machine-readable o
 | `bin/myonto list` | `{"count":N, "entities":[{local, iri, label, types[], desc}]}` |
 | `bin/myonto search <kw>` | `{"count":N, "entities":[{local, iri, label, types[], desc, match_kind}]}` |
 | `bin/myonto entity show <name>` | `{"entity":"<iri>", "count":N, "triples":[{subject, predicate, object:{type,value,lang?,datatype?}}]}` |
+| `bin/myonto reason` | `{"saturated":bool, "derived":[{subject, predicate, object}], "will_apply":bool, "applied":N}` |
+| `bin/myonto check` | `{"findings":[{severity, rule, subject, detail, evidence[]}], "errors":N, "warnings":N}` |
+| `bin/myonto closure <e> -p <p>` | `{"seed":"<iri>", "predicate":"<iri>", "reverse":bool, "reachable":[{term, depth}], "count":N}` |
+| `bin/myonto path <a> <b>` | `{"from":"<iri>", "to":"<iri>", "found":bool, "length":N, "path":[{subject, predicate, object}]}` |
+| `bin/myonto query` | `{"patterns":[...], "group_by":"var", "count":bool, "results":[{key, count?}], "total":N}` |
 
 ## Setup
 
@@ -105,6 +115,30 @@ bin/myonto entity show isaac-newton
 ```bash
 bin/myonto reason        # dry-run: show what would be derived
 bin/myonto reason -a     # apply (writes back to ontology.ttl)
+```
+
+### Analyze the ontology
+
+Four analysis commands consume the ontology as a knowledge graph:
+
+```bash
+# Consistency check — report disjointWith violations (incl. inherited conflicts)
+bin/myonto check
+bin/myonto check --strict     # CI gate: exit 1 on any error
+
+# Transitive closure — impact analysis ("what does X depend on?")
+bin/myonto closure cmd -p dependsOn           # forward
+bin/myonto closure rdf -p dependsOn -r        # reverse ("who depends on X?")
+
+# Shortest path — explain how A relates to B
+bin/myonto path alice bob
+bin/myonto path alice bob -p knows            # only via "knows"
+
+# Lightweight query (SPARQL subset) — group by / count / top-N
+# Includes inferred facts automatically (subclass instances, domain/range types)
+bin/myonto query -w "?s a ?o" -g "?o" -c              # count by type
+bin/myonto query -w "?s ex:bornIn ?o" -g "?o" -c -n 5 # top 5 birthplaces
+bin/myonto query -w "?s ex:knows ?o" -w "?o ex:knows ex:carol"  # JOIN
 ```
 
 ### Generate an interactive graph

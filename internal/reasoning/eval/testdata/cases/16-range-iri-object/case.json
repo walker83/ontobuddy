@@ -1,0 +1,5 @@
+{
+  "name": "range-iri-object",
+  "description": "range 规则对 IRI 宾语正常推导类型。字面量宾语的跳过守卫在 reasoning 包的单测里覆盖（TTL 不允许字面量做主语，无法写成 expect_not_derive）。",
+  "rule": "rdfs:range"
+}

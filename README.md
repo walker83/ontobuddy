@@ -52,6 +52,20 @@ SKILL 描述（Anthropic 协议唯一触发入口）：
 
 详细命令参考在 `skills/myonto/references/commands.md`，安装后 LLM 也会读。
 
+## 数据分析能力
+
+建好本体后，myonto 提供 4 类分析（详见 [`docs/analysis.md`](docs/analysis.md)）：
+
+| 能力 | 命令 | 典型用途 |
+|---|---|---|
+| **推理物化** | `myonto reason -a` | subClassOf/domain/range/传递属性自动补全隐含事实 |
+| **闭包查询** | `myonto closure <e> -p <pred>` | 影响面分析（"改了 X，影响哪些？"），支持反向 `-r` |
+| **最短路径** | `myonto path <a> <b>` | 关系解释（"A 和 B 怎么关联上的？"） |
+| **聚合查询** | `myonto query -w "?s a ?o" -g "?o" -c` | 按类型分组计数、Top-N、JOIN（SPARQL 子集，含推导知识） |
+| **一致性检查** | `myonto check` | 检测 `owl:disjointWith` 等约束违反，`--strict` 可做 CI 门禁 |
+
+所有分析命令支持 `--json` 全局 flag，便于脚本/LLM 消费。
+
 ## 3 分钟上手（向导式）
 
 ```bash

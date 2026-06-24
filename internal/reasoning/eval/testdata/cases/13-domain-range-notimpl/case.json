@@ -1,5 +1,5 @@
 {
-  "name": "domain-range-not-implemented",
-  "description": "边界：rdfs:domain/rdfs:range 当前未实现，不应产生任何推导。钉住能力边界，未来若实现需更新此 case",
-  "rule": "none"
+  "name": "domain-range",
+  "description": "rdfs:domain/rdfs:range 推导：x P y, P domain C ⟹ x a C；P range C ⟹ y a C。原为 notimpl 边界 case，规则实现后转为正向验证。",
+  "rule": "rdfs:domain-range"
 }

@@ -1,0 +1,7 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+# domain: ex:newton 写了某作品 ⟹ ex:newton a ex:Person
+ex:newton a ex:Person .
+# range: ex:principia 被写出 ⟹ ex:principia a ex:Work
+ex:principia a ex:Work .
