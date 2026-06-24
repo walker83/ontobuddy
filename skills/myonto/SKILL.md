@@ -49,6 +49,9 @@ The local namespace IRI is configurable in `.myonto.toml` (default `ex:` → `ht
 | "how are A and B related" | `bin/myonto path <A> <B>` |
 | "count entities by type / group by" | `bin/myonto query -w "?s a ?o" -g "?o" -c` |
 | "show me a graph" | `bin/myonto graph` |
+| "open web UI" / "start server" | `bin/myonto serve` |
+| "what reasoning rules exist" | `bin/myonto serve` → Rules tab |
+| "run inference in browser" | `bin/myonto serve` → Reasoning tab |
 | "summarize this entity in plain English" | `bin/myonto ai summarize <name>` |
 | "extract entities from this text" | `bin/myonto ai extract "<text>"` |
 | "what can I ask about my data" | `bin/myonto ai qa "<question>"` |
@@ -147,6 +150,22 @@ bin/myonto query -w "?s ex:knows ?o" -w "?o ex:knows ex:carol"  # JOIN
 bin/myonto graph                                  # writes ontology-graph.html, auto-opens browser
 bin/myonto graph --include-pred knows -o g.html   # filter to one relationship type
 ```
+
+### Launch Web UI
+
+```bash
+bin/myonto serve                                  # start web UI at http://localhost:7399
+bin/myonto serve --port 9090                      # custom port
+bin/myonto serve -O                               # auto-open browser
+```
+
+Web UI 提供 4 个标签页：
+- **图谱** — 交互式力导向图，class/individual/literal 颜色区分
+- **规则** — 查看所有推理规则，支持启用/禁用开关
+- **推理** — 一键执行推理，查看每条规则的产出统计
+- **检查** — 一致性检查，显示 severity/规则/详情
+
+**自定义模板**：将 `internal/web/ui/index.html` 复制到 `.myonto/web/index.html`（项目级）或 `~/.config/myonto/web/index.html`（全局），修改后重启服务即可生效。
 
 ### LLM-assisted maintenance
 

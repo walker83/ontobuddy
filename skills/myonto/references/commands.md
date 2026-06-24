@@ -151,6 +151,8 @@ RDFS/OWL 轻量规则推理。规则：
 4. owl:TransitiveProperty
 5. owl:SymmetricProperty
 6. owl:inverseOf
+7. rdfs:domain（x P y, P domain C ⟹ x a C）
+8. rdfs:range（x P y, P range C ⟹ y a C，仅 IRI）
 
 ```bash
 bin/myonto reason           # dry-run：展示推导出的新三元组
@@ -228,6 +230,49 @@ bin/myonto query -w "?s a ex:Scientist" --json                # 结构化输出
 | `-c` | COUNT 每组元素数 |
 | `-n N` | Top-N |
 | `-d` | 结果去重 |
+
+---
+
+## `myonto serve` — Web UI 服务器
+
+启动交互式 Web UI，提供图谱可视化、规则管理、推理执行、一致性检查。
+
+```bash
+bin/myonto serve                                  # 默认 localhost:7399
+bin/myonto serve --port 9090                      # 自定义端口
+bin/myonto serve --host 0.0.0.0                   # 监听所有接口
+bin/myonto serve -O                               # 自动打开浏览器
+```
+
+| Flag | 说明 |
+|---|---|
+| `--host` | 监听地址（默认 localhost） |
+| `--port` | 端口号（默认 7399） |
+| `-O` | 自动打开浏览器 |
+
+**端口冲突处理**：如果端口被占用且不是 myonto 自己的进程，自动尝试下一个端口（最多 10 次）。如果是 myonto 自己已运行，提示已存在并退出。
+
+**自定义 HTML 模板**：
+- 项目级：`.myonto/web/index.html`
+- 全局级：`~/.config/myonto/web/index.html`
+- 内置默认：`internal/web/ui/index.html`
+
+修改模板后重启服务即可生效。
+
+Web UI 标签页：
+- **图谱** — vis-network 力导向图，节点按类型着色
+- **规则** — 查看全部推理规则（ID/名称/分类/说明），支持启用/禁用
+- **推理** — 执行推理，展示每条规则的产出统计和推导三元组
+- **检查** — 一致性检查，显示问题严重度/规则/详情
+
+API 端点：
+- `GET /api/rules` — 规则列表
+- `PUT /api/rules/:id` — 启用/禁用规则
+- `POST /api/reason` — 执行推理
+- `POST /api/check` — 一致性检查
+- `GET /api/graph` — 图数据
+- `GET /api/triples?s=&p=&o=` — 三元组查询
+- `GET /api/stats` — 统计信息
 
 ---
 

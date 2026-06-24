@@ -1,0 +1,138 @@
+# MyOntopo 默认推理规则
+# 可复制到 .myonto/rules.yaml 进行自定义（启用/禁用/新增）
+#
+# 变量约定：?x, ?y, ?z 等以 ? 开头的为逻辑变量
+# 三元组模式：{s, p, o} 中可以是变量 (?x) 或固定 IRI (如 "rdf:type")
+#
+# 内置 filter 类型：
+#   not-meta ?p   — 谓词 ?p 不是 RDFS/OWL 元谓词（label, comment, subClassOf 等）
+#   != ?a ?b      — 变量 ?a 和 ?b 不相等（排除自环）
+#   iri-only ?v   — 变量 ?v 必须是 IRI（排除字面量/blank node）
+
+rules:
+
+  - id: subclass-transitive
+    name: "rdfs:subClassOf 传递"
+    description: "A ⊑ B, B ⊑ C ⟹ A ⊑ C"
+    category: rdfs
+    enabled: true
+    implementation: builtin
+    spec:
+      type: chain
+      premises:
+        - {s: "?a", p: "rdfs:subClassOf", o: "?b"}
+        - {s: "?b", p: "rdfs:subClassOf", o: "?c"}
+      conclusion: {s: "?a", p: "rdfs:subClassOf", o: "?c"}
+      filters:
+        - "!= ?a ?c"
+
+  - id: type-inheritance
+    name: "类型继承"
+    description: "x a A, A ⊑ B ⟹ x a B"
+    category: rdfs
+    enabled: true
+    implementation: builtin
+    spec:
+      type: chain
+      premises:
+        - {s: "?x", p: "rdf:type", o: "?a"}
+        - {s: "?a", p: "rdfs:subClassOf", o: "?b"}
+      conclusion: {s: "?x", p: "rdf:type", o: "?b"}
+      filters:
+        - "skip-class ?a"
+
+  - id: subproperty-transitive
+    name: "rdfs:subPropertyOf 传递"
+    description: "P ⊑ Q, Q ⊑ R ⟹ P ⊑ R"
+    category: rdfs
+    enabled: true
+    implementation: builtin
+    spec:
+      type: chain
+      premises:
+        - {s: "?p", p: "rdfs:subPropertyOf", o: "?q"}
+        - {s: "?q", p: "rdfs:subPropertyOf", o: "?r"}
+      conclusion: {s: "?p", p: "rdfs:subPropertyOf", o: "?r"}
+      filters:
+        - "!= ?p ?r"
+
+  - id: property-inheritance
+    name: "属性继承"
+    description: "a P b, P ⊑ Q ⟹ a Q b"
+    category: rdfs
+    enabled: true
+    implementation: builtin
+    spec:
+      type: chain
+      premises:
+        - {s: "?a", p: "?p", o: "?b"}
+        - {s: "?p", p: "rdfs:subPropertyOf", o: "?q"}
+      conclusion: {s: "?a", p: "?q", o: "?b"}
+      filters:
+        - "not-meta ?p"
+
+  - id: transitive-property
+    name: "owl:TransitiveProperty"
+    description: "a P b, b P c ⟹ a P c（P 声明为 Transitive，BFS 闭包）"
+    category: owl
+    enabled: true
+    implementation: builtin
+    spec:
+      type: builtin
+      builtin_id: transitive-property
+      description: "传递属性需要 BFS 闭包计算，无法用简单链式模式表达"
+
+  - id: symmetric-property
+    name: "owl:SymmetricProperty"
+    description: "a P b ⟹ b a（P 声明为 Symmetric）"
+    category: owl
+    enabled: true
+    implementation: builtin
+    spec:
+      type: builtin
+      builtin_id: symmetric-property
+      description: "对称属性需要访问 Reasoner 的谓词缓存"
+
+  - id: inverse-of
+    name: "owl:inverseOf"
+    description: "a P b, P inverseOf Q ⟹ b Q a"
+    category: owl
+    enabled: true
+    implementation: builtin
+    spec:
+      type: builtin
+      builtin_id: inverse-of
+      description: "inverseOf 需要访问 Reasoner 的 inverse 缓存"
+
+  - id: domain
+    name: "rdfs:domain"
+    description: "x P y, P domain C ⟹ x a C"
+    category: rdfs
+    enabled: true
+    implementation: builtin
+    spec:
+      type: chain
+      premises:
+        - {s: "?x", p: "?p", o: "?y"}
+        - {s: "?p", p: "rdfs:domain", o: "?c"}
+      conclusion: {s: "?x", p: "rdf:type", o: "?c"}
+      filters:
+        - "not-meta ?p"
+        - "skip-schema-pred ?p"
+
+  - id: range
+    name: "rdfs:range"
+    description: "x P y, P range C ⟹ y a C（仅 IRI，字面量不加类型）"
+    category: rdfs
+    enabled: true
+    implementation: builtin
+    spec:
+      type: chain
+      premises:
+        - {s: "?x", p: "?p", o: "?y"}
+        - {s: "?p", p: "rdfs:range", o: "?c"}
+      conclusion: {s: "?y", p: "rdf:type", o: "?c"}
+      filters:
+        - "not-meta ?p"
+        - "skip-schema-pred ?p"
+        - "iri-only ?y"

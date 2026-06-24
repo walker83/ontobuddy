@@ -28,6 +28,7 @@ type CLI struct {
 	Path    PathCmd    `cmd:"" help:"找两实体间的最短路径（BFS）"`
 	Query   QueryCmd   `cmd:"" help:"轻量查询：三元组模式匹配 + GROUP BY/COUNT/Top-N（SPARQL 子集）"`
 	Graph   GraphCmd   `cmd:"" help:"生成交互式力导向图（HTML），可自动打开浏览器"`
+	Serve   ServeCmd   `cmd:"" help:"启动 Web UI 服务器（交互式图谱/规则/推理/检查）"`
 	AI      AICmd      `cmd:"" help:"用 LLM 辅助整理本体（summarize/extract/suggest-relations/qa，默认 dry-run）"`
 	Config  ConfigCmd  `cmd:"" help:"管理配置（如 LLM：set-key 加密、show、test、list-providers）"`
 	TUI     TUICmd     `cmd:"" help:"进入 TUI 交互模式（主菜单/浏览/编辑）"`

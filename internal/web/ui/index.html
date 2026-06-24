@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyOntopo — 知识图谱引擎</title>
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --text2: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --radius: 8px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+         background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; }
+  header { background:var(--surface); border-bottom:1px solid var(--border);
+           padding:12px 24px; display:flex; align-items:center; gap:16px; }
+  header h1 { font-size:18px; font-weight:600; }
+  header .stats { margin-left:auto; font-size:13px; color:var(--text2); }
+  nav { display:flex; gap:0; background:var(--surface); border-bottom:1px solid var(--border); padding:0 24px; }
+  nav button { background:none; border:none; color:var(--text2); padding:10px 20px;
+               font-size:14px; cursor:pointer; border-bottom:2px solid transparent; transition:.2s; }
+  nav button:hover { color:var(--text); }
+  nav button.active { color:var(--accent); border-bottom-color:var(--accent); }
+  main { flex:1; overflow:hidden; position:relative; }
+  .tab { display:none; position:absolute; inset:0; overflow:auto; }
+  .tab.active { display:block; }
+  /* Graph tab */
+  #graph-container { width:100%; height:100%; }
+  /* Rules tab */
+  .rules-panel { padding:24px; max-width:1200px; }
+  .rules-table { width:100%; border-collapse:collapse; font-size:14px; }
+  .rules-table th { text-align:left; padding:10px 12px; background:var(--surface);
+                     border-bottom:2px solid var(--border); color:var(--text2); font-weight:500; }
+  .rules-table td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .rules-table tr:hover { background:var(--surface); }
+  .badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:500; }
+  .badge-rdfs { background:#1f3a5f; color:#79c0ff; }
+  .badge-owl { background:#3b2e58; color:#d2a8ff; }
+  .badge-custom { background:#2a3a2a; color:#7ee787; }
+  .toggle { position:relative; width:40px; height:22px; cursor:pointer; }
+  .toggle input { opacity:0; width:0; height:0; }
+  .toggle .slider { position:absolute; inset:0; background:#484f58; border-radius:11px; transition:.3s; }
+  .toggle .slider:before { content:''; position:absolute; width:16px; height:16px;
+                           left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.3s; }
+  .toggle input:checked + .slider { background:var(--green); }
+  .toggle input:checked + .slider:before { transform:translateX(18px); }
+  .rule-detail { font-size:12px; color:var(--text2); margin-top:4px; }
+  .rule-premises { font-family:monospace; font-size:12px; color:var(--text2); }
+  /* Reasoning tab */
+  .reasoning-panel { padding:24px; max-width:1200px; }
+  .btn { background:var(--accent); color:#fff; border:none; padding:8px 20px;
+         border-radius:var(--radius); cursor:pointer; font-size:14px; transition:.2s; }
+  .btn:hover { opacity:0.9; }
+  .btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .btn-outline { background:transparent; border:1px solid var(--border); color:var(--text); }
+  .result-box { margin-top:16px; background:var(--surface); border:1px solid var(--border);
+                border-radius:var(--radius); padding:16px; max-height:60vh; overflow:auto; }
+  .result-box pre { font-size:13px; line-height:1.5; white-space:pre-wrap; }
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+                gap:12px; margin-top:16px; }
+  .stat-card { background:var(--surface); border:1px solid var(--border);
+               border-radius:var(--radius); padding:16px; }
+  .stat-card h3 { font-size:13px; color:var(--text2); margin-bottom:8px; }
+  .stat-card .value { font-size:28px; font-weight:600; }
+  /* Check tab */
+  .check-panel { padding:24px; max-width:1200px; }
+  .finding { background:var(--surface); border:1px solid var(--border);
+             border-radius:var(--radius); padding:12px 16px; margin-bottom:8px; }
+  .finding-error { border-left:3px solid var(--red); }
+  .finding-warning { border-left:3px solid var(--yellow); }
+  .finding-header { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .severity { font-size:12px; font-weight:600; text-transform:uppercase; }
+  .severity-error { color:var(--red); }
+  .severity-warning { color:var(--yellow); }
+  .finding-detail { font-size:13px; color:var(--text2); }
+  .empty { text-align:center; color:var(--text2); padding:48px; font-size:14px; }
+  .loader { display:inline-block; width:16px; height:16px; border:2px solid var(--border);
+            border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .toolbar { display:flex; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 MyOntopo</h1>
+  <span class="stats" id="header-stats"></span>
+</header>
+<nav>
+  <button class="active" onclick="switchTab('graph')">📊 图谱</button>
+  <button onclick="switchTab('rules')">📋 规则</button>
+  <button onclick="switchTab('reasoning')">⚡ 推理</button>
+  <button onclick="switchTab('check')">🔍 检查</button>
+</nav>
+<main>
+  <!-- Graph Tab -->
+  <div class="tab active" id="tab-graph">
+    <div id="graph-container"></div>
+  </div>
+
+  <!-- Rules Tab -->
+  <div class="tab" id="tab-rules">
+    <div class="rules-panel">
+      <div class="toolbar">
+        <h2>推理规则</h2>
+        <span style="color:var(--text2);font-size:13px" id="rules-count"></span>
+      </div>
+      <table class="rules-table">
+        <thead>
+          <tr>
+            <th>启用</th>
+            <th>ID</th>
+            <th>名称</th>
+            <th>分类</th>
+            <th>说明</th>
+            <th>产出</th>
+          </tr>
+        </thead>
+        <tbody id="rules-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Reasoning Tab -->
+  <div class="tab" id="tab-reasoning">
+    <div class="reasoning-panel">
+      <div class="toolbar">
+        <h2>推理执行</h2>
+        <button class="btn" id="btn-reason" onclick="runReasoning()">▶ 执行推理</button>
+        <button class="btn btn-outline" onclick="loadStats()">刷新统计</button>
+      </div>
+      <div class="stats-grid" id="reasoning-stats"></div>
+      <div class="result-box" id="reasoning-result" style="display:none">
+        <pre id="reasoning-output"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Check Tab -->
+  <div class="tab" id="tab-check">
+    <div class="check-panel">
+      <div class="toolbar">
+        <h2>一致性检查</h2>
+        <button class="btn" id="btn-check" onclick="runCheck()">▶ 执行检查</button>
+      </div>
+      <div id="check-result"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = '';
+let graphNetwork = null;
+let currentRules = [];
+let lastStats = null;
+
+// --- Tab switching ---
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelectorAll('nav button')[
+    ['graph','rules','reasoning','check'].indexOf(name)
+  ].classList.add('active');
+  if (name === 'graph' && !graphNetwork) loadGraph();
+  if (name === 'rules') loadRules();
+  if (name === 'reasoning') loadStats();
+}
+
+// --- Graph ---
+async function loadGraph() {
+  try {
+    const res = await fetch(API + '/api/graph');
+    const data = await res.json();
+    const container = document.getElementById('graph-container');
+    const nodes = new vis.DataSet(data.nodes.map(n => ({
+      id: n.id, label: n.label, group: n.group,
+      shape: n.group === 'class' ? 'diamond' : n.group === 'property' ? 'triangle' : 'dot',
+      font: { color: '#e6edf3', size: 12 },
+    })));
+    const edges = new vis.DataSet(data.edges.map((e, i) => ({
+      id: i, from: e.from, to: e.to, label: e.label,
+      font: { color: '#8b949e', size: 10, strokeWidth: 0 },
+      arrows: 'to', color: { color: '#30363d', highlight: '#58a6ff' },
+    })));
+    graphNetwork = new vis.Network(container, { nodes, edges }, {
+      groups: {
+        class: { color: { background: '#1f6feb', border: '#58a6ff' } },
+        individual: { color: { background: '#238636', border: '#3fb950' } },
+        property: { color: { background: '#8957e5', border: '#d2a8ff' } },
+        literal: { color: { background: '#6e7681', border: '#8b949e' }, shape: 'box' },
+      },
+      physics: { barnesHut: { gravitationalConstant: -3000, springLength: 120 } },
+      interaction: { hover: true, tooltipDelay: 200 },
+    });
+  } catch (e) {
+    console.error('loadGraph error:', e);
+  }
+}
+
+// --- Rules ---
+async function loadRules() {
+  try {
+    const res = await fetch(API + '/api/rules');
+    currentRules = await res.json();
+    renderRules(currentRules);
+  } catch (e) {
+    console.error('loadRules error:', e);
+  }
+}
+
+function renderRules(rules) {
+  const body = document.getElementById('rules-body');
+  document.getElementById('rules-count').textContent = rules.length + ' 条规则';
+  body.innerHTML = rules.map(r => `
+    <tr>
+      <td>
+        <label class="toggle">
+          <input type="checkbox" ${r.enabled ? 'checked' : ''} onchange="toggleRule('${r.id}', this.checked)">
+          <span class="slider"></span>
+        </label>
+      </td>
+      <td><code>${r.id}</code></td>
+      <td>${r.name}</td>
+      <td><span class="badge badge-${r.category}">${r.category}</span></td>
+      <td>
+        ${r.description}
+        <div class="rule-detail">
+          实现: ${r.implementation} · 类型: ${r.spec_type}
+          ${r.premise_count ? ' · 前提: ' + r.premise_count : ''}
+          ${r.has_conclusion ? ' · 有结论模板' : ''}
+        </div>
+      </td>
+      <td>${r.produced_triples || '-'}</td>
+    </tr>
+  `).join('');
+}
+
+async function toggleRule(id, enabled) {
+  try {
+    await fetch(API + '/api/rules/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+  } catch (e) {
+    console.error('toggleRule error:', e);
+  }
+}
+
+// --- Reasoning ---
+async function loadStats() {
+  try {
+    const res = await fetch(API + '/api/stats');
+    lastStats = await res.json();
+    renderStats(lastStats);
+  } catch (e) {
+    console.error('loadStats error:', e);
+  }
+}
+
+function renderStats(stats) {
+  const grid = document.getElementById('reasoning-stats');
+  const entries = Object.entries(stats.rule_stats || {});
+  grid.innerHTML = `
+    <div class="stat-card">
+      <h3>原始三元组</h3>
+      <div class="value">${stats.total_triples}</div>
+    </div>
+    <div class="stat-card">
+      <h3>推导三元组</h3>
+      <div class="value">${stats.inferred_triples}</div>
+    </div>
+    <div class="stat-card">
+      <h3>活跃规则</h3>
+      <div class="value">${entries.length}</div>
+    </div>
+    ${entries.map(([id, s]) => `
+      <div class="stat-card">
+        <h3>${s.rule_name}</h3>
+        <div class="value">${s.produced_triples}</div>
+        <div style="font-size:12px;color:var(--text2)">${s.iterations} 轮迭代</div>
+      </div>
+    `).join('')}
+  `;
+}
+
+async function runReasoning() {
+  const btn = document.getElementById('btn-reason');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> 推理中...';
+  try {
+    const res = await fetch(API + '/api/reason', { method: 'POST' });
+    const data = await res.json();
+    const box = document.getElementById('reasoning-result');
+    const output = document.getElementById('reasoning-output');
+    box.style.display = 'block';
+    if (data.derived && data.derived.length > 0) {
+      output.textContent = data.derived.map(t =>
+        `${t.Subject.Value}  ${t.Predicate.Value}  ${t.Object.Value}`
+      ).join('\n');
+      output.textContent = `# 推导出 ${data.derived.length} 条新三元组\n\n` + output.textContent;
+    } else {
+      output.textContent = '# 无新推导（已达到不动点或无适用规则）';
+    }
+    // 刷新统计
+    await loadStats();
+  } catch (e) {
+    console.error('runReasoning error:', e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '▶ 执行推理';
+  }
+}
+
+// --- Check ---
+async function runCheck() {
+  const btn = document.getElementById('btn-check');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> 检查中...';
+  try {
+    const res = await fetch(API + '/api/check', { method: 'POST' });
+    const data = await res.json();
+    const container = document.getElementById('check-result');
+    if (data.findings && data.findings.length > 0) {
+      container.innerHTML = data.findings.map(f => `
+        <div class="finding finding-${f.severity}">
+          <div class="finding-header">
+            <span class="severity severity-${f.severity}">${f.severity}</span>
+            <strong>${f.rule}</strong>
+            <span style="color:var(--text2)">— ${f.subject.Value}</span>
+          </div>
+          <div class="finding-detail">${f.detail}</div>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<div class="empty">✅ 未发现一致性问题</div>';
+    }
+  } catch (e) {
+    console.error('runCheck error:', e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '▶ 执行检查';
+  }
+}
+
+// --- Init ---
+(async function init() {
+  // 加载头部统计
+  try {
+    const res = await fetch(API + '/api/stats');
+    const stats = await res.json();
+    document.getElementById('header-stats').textContent =
+      `${stats.total_triples} 三元组 · ${stats.inferred_triples} 推导`;
+  } catch (e) {}
+  loadGraph();
+})();
+</script>
+</body>
+</html>
